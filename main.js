@@ -47,9 +47,9 @@ console.log(checkCashRegister(19.5, 20, [["PENNY", 1.01], ["NICKEL", 2.05], ["DI
 // Thinking process
 
 /*
-Technically, we can count the amount of cash in the register and compare it to needed amount of change
-right from the bat. If they are equal, then all money from register goes to client, we pop "CLOSED"
-answer and finish working with function early, without additional computations.
+Two easy cases are "I don't have enough change in cash register" and "I have exact change amount in change register".
+First one returns "INSUFFICIENT_FUNDS" and empty array.
+Second one returns "CLOSED" and same array as have been passed to the function.
 */
 
 const cashInRegisterClosedTest = [
@@ -64,33 +64,31 @@ const cashInRegisterClosedTest = [
   ["ONE HUNDRED", 0]
 ];
 
-function checkCashRegisterTestClosed(price, cash, cid) {
-  let change = {};
-  let cidAmount = 0;  
-
-  for (let i = 0; i < cid.length; i++) {
-    cidAmount += cid[i][1];
-  }
-
-  if (cidAmount == (cash - price).toFixed(2)) {
-    change["status"] = "CLOSED";
-    change["change"] = cid;
-    return change;
-  }
-
-  return change;
-}
-
-// console.log(checkCashRegisterTestClosed(96.74, 100, cashInRegisterClosedTest));
+const cashInRegisterLessThanChangeTest = [
+  ["PENNY", 0.01],
+  ["NICKEL", 0],
+  ["DIME", 0],
+  ["QUARTER", 0],
+  ["ONE", 3],
+  ["FIVE", 0],
+  ["TEN", 0],
+  ["TWENTY", 0],
+  ["ONE HUNDRED", 0]
+];
 
 /*
-For INSUFFICIENT_FUNDS and OPEN cases we still need to return "change" object, so I can't just say
-that I don't have enough funds and finish the function.
+"OPEN" case and second variant of "INSUFFICIENT_FUNDS" case require cash-in-register evaluation.
 
-My approach will be, for every cash type:
-1) if I don't have any cash of a type, I skip computations for this cash type;
-2) 
+First, divide change amount by bill/coin value in descending value order, with remainder.
+Remainder gets pushed to next division stage.
+Division result is compared with available bill/coin amount. If cash in register doesn't cover the required
+bill/coin amount, the rest is also pushed to next division stage.
+
+On "penny" stage:
+- if cash-in-register covered change amount fully, "OPEN" is returned with array of bill/coin amounts;
+- if cash-in-register didn't cover the change amount exactly, "INSUFFICIENT_FUNDS" is returned with empty array.
 */
+
 const cashInRegisterOpenTest = [
   ["PENNY", 1.01],
   ["NICKEL", 2.05],
@@ -107,63 +105,101 @@ function checkCashRegister(price, cash, cid) {
   let change = {};
   let cidAmount = 0;  
 
-  // Checking for CLOSED situation
   // Counting cash in register
   for (let i = 0; i < cid.length; i++) {
     cidAmount += cid[i][1];
   }
 
-  // If cash-in-register equals change amount, early "return" activates
+  // If cash-in-register equals change amount => "CLOSED"
   if (cidAmount == (cash - price).toFixed(2)) {
     change["status"] = "CLOSED";
     change["change"] = cid;
     return change;
   }
 
-  
+  // If cash-in-register is less than change amount => "INSUFFICIENT_FUNDS"
+  if (cidAmount < (cash - price).toFixed(2)) {
+    change["status"] = "INSUFFICIENT_FUNDS";
+    change["change"] = [];
+    return change;
+  }
+
+  let amountToWorkWith = cash - price;
+  let remainingChangeToCount = 0;
+  let changeArray = [];
+
+  if (amountToWorkWith / 100 < 1) {
+    // if there's no need to give out $100 bills, passing the change amount to var with remaining change to count
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    // assigning remainder to var with remaining change to count, i.e. $112: we will give $100, and $12 is passed onwards
+    remainingChangeToCount = amountToWorkWith % 100;
+    // substracting remainder from whole change amount to get whole amount in hundreds needed to be given out
+    // i.e. $212 - $12 = $200. If we have $300 in register, we give $200 to client. If we have $100, we give out $100, and
+    // add remaining $100 to remaining change to count. 
+    if (cid[8][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[8][1];
+      changeArray.unshift(cid[8][1]);
+    } else if (cid[8][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      // if we need to give out $100 and we have $300 in register, we just add $100 to resulting changeArray
+      // task says nothing about keeping track of remaining change in register
+      changeArray.unshift(["ONE HUNDRED", amountToWorkWith - remainingChangeToCount]);
+    }
+  }
+
+  // for twenties
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 20 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = amountToWorkWith % 20;
+
+    if (cid[7][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[7][1];
+      changeArray.unshift(["TWENTY", cid[7][1]]);
+    } else if (cid[7][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.unshift(["TWENTY", amountToWorkWith - remainingChangeToCount]);
+    }
+  }
+
+  // for tens
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 10 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = amountToWorkWith % 10;
+
+    if (cid[6][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[6][1];
+      changeArray.unshift(["TEN", cid[6][1]]);
+    } else if (cid[6][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.unshift(["TEN", amountToWorkWith - remainingChangeToCount]);
+    }
+  }
+
+  change["status"] = "OPEN";
+  change["change"] = changeArray;
+
   return change;
 }
 
-console.log(checkCashRegister(96.74, 100, cashInRegisterClosedTest)); // CLOSED test-case
-console.log(checkCashRegister(3.26, 100, cashInRegisterOpenTest)); // OPEN test-case
+// CLOSED test-case
+console.log(checkCashRegister(96.74, 100, cashInRegisterClosedTest)); 
+// INSUFFICIENT_FUNDS (not enough change) test-case
+console.log(checkCashRegister(96.74, 100, cashInRegisterLessThanChangeTest)); 
+// OPEN test-case
+console.log(checkCashRegister(20, 200, cashInRegisterOpenTest)["change"][1]);
 
 
 /*
-let hundredsToGive;
-let twentysToGive;
 
-if ((cash - price) / 100 < 1) {
-  remainingChangeToCalculate = cash - price;
-} else {
-  remainingChangeToCalculate = (cash - price) % 100;
-  hundredsToGive = Math.floor((cash - price) / 100);
-  if (hundredsToGive > cashInRegister[8][1]) {
-    remainingChangeToCalculate += (hundredsToGive - cashInRegister[8][1]) * 100;
-    hundredsToGive = cashInRegister[8][1];
-  }
-}
 
-if (remainingChangeToCalculate / 20 >= 1) {
-  twentysToGive = Math.floor(remainingChangeToCalculate / 20);
-  remainingChangeToCalculate = remainingChangeToCalculate % 20;
-  if (twentysToGive > cashInRegister[7][1]) {
-    remainingChangeToCalculate += (twentysToGive - cashInRegister[7][1]) * 20;
-    twentysToGive = cashInRegister[7][1];
-  }
-}
-
-console.log(cash - price, remainingChangeToCalculate, hundredsToGive, twentysToGive);*/
-
-/*
-First idea was to use division with remainder: divide by available currency from highest valuable down
-and get the amount of needed bills/coins, then proceed to the next bill/coin, and so on. Skip steps if
-division is less than 1 (means we don't need twenty bills for change of 2 dimes).
-
-There's also a problem with each bill/coin amount in the register - maybe implement spot check for
-amount of bills/coins we have on hand during the divisions? Like, if we divide something by nickel's
-worth, get 5 but we only have 3 nickels. If this happens, we will give out 3 nickels, and must add 2
-nickel's worth to the remainder, and then try to give change with pennies.
-
-Then use IF statements to check for amount of cash in the register and "CLOSED"/"INSUFFICIENT FUNDS"
-situations.
-*/
+console.log(cash - price, remainingChangeToCount, hundredsToGive, twentysToGive);*/
