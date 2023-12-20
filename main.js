@@ -111,14 +111,14 @@ function checkCashRegister(price, cash, cid) {
   }
 
   // If cash-in-register equals change amount => "CLOSED"
-  if (cidAmount == (cash - price).toFixed(2)) {
+  if ((Math.round(cidAmount * 1e2 ) / 1e2) == (Math.round((cash - price) * 1e2 ) / 1e2)) {
     change["status"] = "CLOSED";
     change["change"] = cid;
     return change;
   }
 
   // If cash-in-register is less than change amount => "INSUFFICIENT_FUNDS"
-  if (cidAmount < (cash - price).toFixed(2)) {
+  if ((Math.round(cidAmount * 1e2 ) / 1e2) < (Math.round((cash - price) * 1e2 ) / 1e2)) {
     change["status"] = "INSUFFICIENT_FUNDS";
     change["change"] = [];
     return change;
@@ -133,17 +133,18 @@ function checkCashRegister(price, cash, cid) {
     remainingChangeToCount = amountToWorkWith;
   } else {
     // assigning remainder to var with remaining change to count, i.e. $112: we will give $100, and $12 is passed onwards
-    remainingChangeToCount = amountToWorkWith % 100;
+    remainingChangeToCount = Math.round((amountToWorkWith % 100) * 1e2 ) / 1e2;
     // substracting remainder from whole change amount to get whole amount in hundreds needed to be given out
     // i.e. $212 - $12 = $200. If we have $300 in register, we give $200 to client. If we have $100, we give out $100, and
     // add remaining $100 to remaining change to count. 
     if (cid[8][1] < (amountToWorkWith - remainingChangeToCount)) {
       remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[8][1];
-      changeArray.unshift(cid[8][1]);
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(cid[8][1]);
     } else if (cid[8][1] >= (amountToWorkWith - remainingChangeToCount)) {
       // if we need to give out $100 and we have $300 in register, we just add $100 to resulting changeArray
       // task says nothing about keeping track of remaining change in register
-      changeArray.unshift(["ONE HUNDRED", amountToWorkWith - remainingChangeToCount]);
+      changeArray.push(["ONE HUNDRED", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
     }
   }
 
@@ -156,13 +157,14 @@ function checkCashRegister(price, cash, cid) {
   if (amountToWorkWith / 20 < 1) {
     remainingChangeToCount = amountToWorkWith;
   } else {
-    remainingChangeToCount = amountToWorkWith % 20;
+    remainingChangeToCount = Math.round((amountToWorkWith % 20) * 1e2 ) / 1e2;
 
     if (cid[7][1] < (amountToWorkWith - remainingChangeToCount)) {
       remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[7][1];
-      changeArray.unshift(["TWENTY", cid[7][1]]);
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["TWENTY", cid[7][1]]);
     } else if (cid[7][1] >= (amountToWorkWith - remainingChangeToCount)) {
-      changeArray.unshift(["TWENTY", amountToWorkWith - remainingChangeToCount]);
+      changeArray.push(["TWENTY", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
     }
   }
 
@@ -175,28 +177,153 @@ function checkCashRegister(price, cash, cid) {
   if (amountToWorkWith / 10 < 1) {
     remainingChangeToCount = amountToWorkWith;
   } else {
-    remainingChangeToCount = amountToWorkWith % 10;
+    remainingChangeToCount = Math.round((amountToWorkWith % 10) * 1e2 ) / 1e2;
 
     if (cid[6][1] < (amountToWorkWith - remainingChangeToCount)) {
       remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[6][1];
-      changeArray.unshift(["TEN", cid[6][1]]);
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["TEN", cid[6][1]]);
     } else if (cid[6][1] >= (amountToWorkWith - remainingChangeToCount)) {
-      changeArray.unshift(["TEN", amountToWorkWith - remainingChangeToCount]);
+      changeArray.push(["TEN", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
     }
   }
 
-  change["status"] = "OPEN";
-  change["change"] = changeArray;
+  // for fives
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
 
+  if (amountToWorkWith / 5 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 5) * 1e2 ) / 1e2;
+
+    if (cid[5][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[5][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["FIVE", cid[5][1]]);
+    } else if (cid[5][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["FIVE", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  // for ones
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 1 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 1) * 1e2 ) / 1e2;
+
+    if (cid[4][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[4][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["ONE", cid[4][1]]);
+    } else if (cid[4][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["ONE", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  // for quarters
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 0.25 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 0.25) * 1e2 ) / 1e2;
+
+    if (cid[3][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[3][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["QUARTER", cid[3][1]]);
+    } else if (cid[3][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["QUARTER", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  // for dimes
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 0.1 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 0.1) * 1e2 ) / 1e2;
+
+    if (cid[2][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[2][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["DIME", cid[2][1]]);
+    } else if (cid[2][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["DIME", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  // for nickels
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 0.05 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 0.05) * 1e2 ) / 1e2;
+
+    if (cid[1][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[1][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["NICKEL", cid[1][1]]);
+    } else if (cid[1][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["NICKEL", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  // for pennies
+  // reassigning remainingChangeToCount to amountToWorkWith to keep using same IF construct
+  amountToWorkWith = remainingChangeToCount;
+  // emptying remainingChangeToCount var
+  remainingChangeToCount = 0;
+
+  if (amountToWorkWith / 0.01 < 1) {
+    remainingChangeToCount = amountToWorkWith;
+  } else {
+    remainingChangeToCount = Math.round((amountToWorkWith % 0.01) * 1e2 ) / 1e2;
+
+    if (cid[0][1] < (amountToWorkWith - remainingChangeToCount)) {
+      remainingChangeToCount += amountToWorkWith - remainingChangeToCount - cid[0][1];
+      remainingChangeToCount = Math.round(remainingChangeToCount * 1e2 ) / 1e2;
+      changeArray.push(["PENNY", cid[0][1]]);
+    } else if (cid[0][1] >= (amountToWorkWith - remainingChangeToCount)) {
+      changeArray.push(["PENNY", Math.round((amountToWorkWith - remainingChangeToCount) * 1e2) / 1e2]);
+    }
+  }
+
+  if (remainingChangeToCount != 0) {
+    change["status"] = "INSUFFICIENT_FUNDS";
+    change["change"] = [];
+  } else {
+    change["status"] = "OPEN";
+    change["change"] = changeArray;
+  }
   return change;
 }
 
 // CLOSED test-case
-console.log(checkCashRegister(96.74, 100, cashInRegisterClosedTest)); 
+// console.log(checkCashRegister(96.74, 100, cashInRegisterClosedTest)); 
 // INSUFFICIENT_FUNDS (not enough change) test-case
-console.log(checkCashRegister(96.74, 100, cashInRegisterLessThanChangeTest)); 
+// console.log(checkCashRegister(96.74, 100, cashInRegisterLessThanChangeTest)); 
 // OPEN test-case
-console.log(checkCashRegister(20, 200, cashInRegisterOpenTest)["change"][1]);
+console.log(checkCashRegister(3.26, 100, [["PENNY", 1.01], ["NICKEL", 2.05], ["DIME", 3.1], ["QUARTER", 4.25], ["ONE", 90], ["FIVE", 55], ["TEN", 20], ["TWENTY", 60], ["ONE HUNDRED", 100]])["change"][1]);
 
 
 /*
